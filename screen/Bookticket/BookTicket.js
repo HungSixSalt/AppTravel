@@ -26,7 +26,7 @@ const BookTicket = () => {
                 </View>
                 <View style={styles.BodyMenu}>
                     <TouchableOpacity style={styles.buttonItem}>
-                        <Text>Một chiều / Khứ hồi</Text>
+                        <Text>Một chiều / Khứ hồ</Text>
                     </TouchableOpacity>
                 </View>
             </LinearGradient>
