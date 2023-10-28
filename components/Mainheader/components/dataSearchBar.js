@@ -1,6 +1,7 @@
 import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native'
 import React, { useState, useEffect } from 'react'
 
+const apiURL = "https://jsonplaceholder.typicode.com/posts";
 const SearchBar = () => {
     const [filterdData, setfilterdData] = useState([])
     const [masterData, setmasterData] = useState([])
@@ -12,7 +13,7 @@ const SearchBar = () => {
         }
     }, [])
     const fetchPost = () => {
-        const apiURL = "https://jsonplaceholder.typicode.com/posts";
+        
         fetchPost(apiURL)
             .then((response) => response.json())
             .then((responseJson) => {
