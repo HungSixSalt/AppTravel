@@ -13,6 +13,9 @@ import { useRef } from 'react';
 import BottomSheet2 from '../../../components/BottomSheet';
 import BoxItemControl from './BoxItemControl';
 import CheckedItem from './CheckedItem';
+import { FlatList } from 'react-native-gesture-handler';
+import axios from 'axios';
+import { debounce } from 'lodash';
 
 
 const Booking = () => {
@@ -124,14 +127,14 @@ const Booking = () => {
     const [selectedIndex, setIndex] = useState(0);
     const [SeatClass, setSeatClass] = useState('Economy');
     const getSeatClass = () => {
-        
+
         if (selectedIndex == 0) {
             setSeatClass('Economy')
         } else if (selectedIndex == 1) {
             setSeatClass('Premium Economy')
         } else if (selectedIndex == 2) {
             setSeatClass('Business')
-        } else{
+        } else {
             setSeatClass('First Class')
         }
         bottomSheetModalRef?.close();
@@ -158,13 +161,87 @@ const Booking = () => {
             description: 'Hạng cao cấp nhất, với dịch vụ 5 sao được cá nhân hoá'
         },
     ]
+    // Đẩy dữ liệu địa điểm
+    const [place, setplace] = useState([]);
+    const [diadiemcatcanh, setdiadiemcatcanh] = useState('');
+    const [diadiemhacanh, setdiadiemhacanh] = useState('');
+    const [flagdiadiem, setflagdiadiem] = useState(true);
+    useEffect(() => {
+        axios.get("https://6543e0c901b5e279de211762.mockapi.io/localhost/traveloka/diadiem")
+            .then((response) => setplace(response.data)).catch((err) => console.log(err))
+    }, [])
+
+    const renderdiadiem = ({ item }) => {
+        return (
+            <TouchableOpacity onPress={() => {
+                if (flagdiadiem) {
+                    setIsVisible(false)
+                    setdiadiemcatcanh(item.name)
+                } else {
+                    setIsVisible(false)
+                    setdiadiemhacanh(item.name)
+                }
+                if(diadiemcatcanh == diadiemhacanh){
+                    Alert.alert('Thông báo!', 'Địa điểm cất cánh trùng với địa điểm hạ cánh!', [
+                        {
+                            text: 'Ok',
+                        },
+                    ]);
+                }else{
+                    Alert.alert('Thông báo!', 'Địa điểm hạ cánh trùng với địa điểm cất cánh!', [
+                        {
+                            text: 'Ok',
+                        },
+                    ]);
+                }
+
+            }} style={styles.containerDataplace}>
+                <Text style={styles.namediadiem} key={item.id}>{item.name}</Text>
+            </TouchableOpacity>
+        )
+    }
+    const switchDiaDiem = () => {
+        if (diadiemcatcanh.length <= 0 || diadiemhacanh.length <= 0) {
+            Alert.alert('Thông báo!', 'Địa điểm cất cánh và địa điểm hạ cánh không được bỏ trống!', [
+                {
+                    text: 'Ok',
+                },
+            ]);
+        } else {
+            setdiadiemcatcanh(diadiemhacanh);
+            setdiadiemhacanh(diadiemcatcanh);
+        }
+    }
+    // Tìm kiếm địa điểm
+    
+    const debounceSearch = debounce((textsearch)=>{
+        let apiUrl = 'https://6543e0c901b5e279de211762.mockapi.io/localhost/traveloka/diadiem';
+
+        if (textsearch.trim() !== '') {
+            apiUrl += `?name=${textsearch}`;
+        }
+        axios.get(apiUrl)
+            .then((response) => {
+                setplace(response.data);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    },500)
+
+    const searchPlaces = (textsearch) => {
+        debounceSearch(textsearch);
+    }
     return (
         <View style={styles.container}>
             <View style={styles.boxBooking}>
                 <View style={styles.containerAPI}>
                     <Text>Từ</Text>
                     <TouchableOpacity style={styles.dataAPI}
-                        onPress={() => setIsVisible(true)}
+                        onPress={() => {
+                            setIsVisible(true)
+                            setflagdiadiem(true)
+                        }}
                     >
                         <View style={{ marginRight: 10 }}>
                             <Image style={styles.iconImage} source={IconMenu.takeoff}></Image>
@@ -174,14 +251,14 @@ const Booking = () => {
                             fontWeight: 'bold'
                         }}
                         >
-                            TP HCM (SGN)
+                            {diadiemcatcanh}
                         </Text>
                     </TouchableOpacity>
                 </View>
 
                 <View style={{ width: '100%', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                     <TouchableOpacity style={styles.ButtonSwitch}
-
+                        onPress={switchDiaDiem}
                     >
                         <Image style={styles.iconImage} source={IconMenu.iconChange}></Image>
                     </TouchableOpacity>
@@ -189,7 +266,10 @@ const Booking = () => {
                 <View style={styles.containerAPI}>
                     <Text>Đến</Text>
                     <TouchableOpacity style={styles.dataAPI}
-
+                        onPress={() => {
+                            setIsVisible(true)
+                            setflagdiadiem(false)
+                        }}
                     >
                         <View style={{ marginRight: 10 }}>
                             <Image style={styles.iconImage} source={IconMenu.landing}></Image>
@@ -199,7 +279,7 @@ const Booking = () => {
                             fontWeight: 'bold'
                         }}
                         >
-                            Huế (HUI)
+                            {diadiemhacanh}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -314,18 +394,21 @@ const Booking = () => {
                                 <FontAwesome name='search' color={'black'} size={18} onPress={() => { }} />
                             </View>
                             <TextInput
-
                                 placeholder='Tìm kiếm thành phố'
                                 style={{ width: '90%' }}
+                                onChangeText={(text) => searchPlaces(text)}
                             />
-
-
                         </View>
                         <TouchableOpacity style={{ width: '10%', justifyContent: 'center', alignItems: 'center' }} onPress={() => setIsVisible(false)}>
                             <Text style={{ color: 'white', fontSize: 15 }}>Huỷ</Text>
                         </TouchableOpacity>
                     </LinearGradient>
                     <View style={styles.BodySheet}>
+                        <FlatList
+                            data={place}
+                            renderItem={renderdiadiem}
+                            keyExtractor={(item) => item.id}
+                        />
 
                     </View>
                 </View>
@@ -334,48 +417,6 @@ const Booking = () => {
                 setBottomSheetModalRef={setBottomSheetModalRef}
                 snapPoints={snapPoints}
             >
-                {/* <View style={styles.container1}>
-                    <View style={styles.Header1}>
-                        <Text style={styles.textTitle}>Thêm hành khách</Text>
-                    </View>
-                    <View style={styles.Body1}>
-                        <View style={styles.content}>
-                            <BoxItemControl 
-                                nameObject='Người lớn'
-                                ageObject='Trên 12 tuổi'
-                                iconObject={IconMenu.iconAdults}
-                                quantity={Adults}
-                                actionType1={handleDecreaseAdults}
-                                actionType2={handleIncreaseAdults}
-                            />
-                            <BoxItemControl 
-                                nameObject='Trẻ em'
-                                ageObject='Từ 2-11 tuổi'
-                                iconObject={IconMenu.iconChildren}
-                                quantity={Children}
-                                actionType1={handleDecreaseChildren}
-                                actionType2={handleIncreaseChildren}
-                            />
-                            
-                            <BoxItemControl 
-                                nameObject='Em bé'
-                                ageObject='Dưới 2 tuổi'
-                                iconObject={IconMenu.iconBaby}
-                                quantity={Baby}
-                                actionType1={handleDecreaseBaby}
-                                actionType2={handleIncreaseBaby}
-                            />
-                            
-                        </View>
-                    </View>
-                    <View style={styles.Footer1}>
-                        <TouchableOpacity style={styles.ButtonAccept}
-                            onPress={getTotal}
-                        >
-                            <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Xác nhận</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View> */}
                 <View style={styles.container1}>
                     <View style={styles.Header1}>
                         <Text style={styles.textTitle}>Chọn hạng ghế</Text>
@@ -407,7 +448,7 @@ const Booking = () => {
                 </View>
                 {/* <Passenger /> */}
             </BottomSheet2>
-            <BottomSheet2 
+            <BottomSheet2
                 setBottomSheetModalRef={setBottomSheetModalRef1}
                 snapPoints={snapPoints1}
             >
@@ -531,7 +572,7 @@ const styles = StyleSheet.create({
     },
     BodySheet: {
         width: '100%',
-        height: 1000
+        height: 800,
     },
     buttonSetText: {
         width: 20,
@@ -582,5 +623,16 @@ const styles = StyleSheet.create({
     content1: {
         padding: 20,
     },
+    containerDataplace: {
+        width: '100%',
+        height: 40,
+        justifyContent: 'center',
+        paddingHorizontal: 10,
 
+    },
+    namediadiem: {
+        fontSize: 20,
+        backgroundColor: '#C5CAC7',
+        padding: 5,
+    }
 })
